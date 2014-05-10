@@ -15,6 +15,8 @@ JLine is a Java library for handling console input. It is similar in functionali
 
 JLine 2.x is an evolution of [JLine 1.x](https://github.com/jline/jline) which was previously maintained at [SourceForge](http://jline.sourceforge.net/).
 
+This is a fork of JLine 2(https://github.com/jline/jline2). This fork is created to customize JLine 2 to meet AeroFS's need.
+
 License
 -------
 
@@ -52,7 +54,7 @@ Building
 
 Check out and build:
 
-    git clone git://github.com/jline/jline2.git
+    git clone git://github.com/aerofs/jline2.git
     cd jline2
     mvn install
 
