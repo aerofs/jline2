@@ -8,36 +8,6 @@
  */
 package jline.console;
 
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.Stack;
-
 import jline.Terminal;
 import jline.TerminalFactory;
 import jline.UnixTerminal;
@@ -46,13 +16,13 @@ import jline.console.completer.Completer;
 import jline.console.completer.CompletionHandler;
 import jline.console.history.History;
 import jline.console.history.MemoryHistory;
-import jline.internal.Configuration;
+import jline.internal.*;
 import jline.internal.InputStreamReader;
-import jline.internal.Log;
-import jline.internal.NonBlockingInputStream;
-import jline.internal.Nullable;
-import jline.internal.Urls;
 import org.fusesource.jansi.AnsiOutputStream;
+
+import java.io.*;
+import java.net.URL;
+import java.util.*;
 
 import static jline.internal.Preconditions.checkNotNull;
 
@@ -66,6 +36,15 @@ import static jline.internal.Preconditions.checkNotNull;
  * @author <a href="mailto:mwp1@cornell.edu">Marc Prud'hommeaux</a>
  * @author <a href="mailto:jason@planet57.com">Jason Dillon</a>
  * @author <a href="mailto:gnodet@gmail.com">Guillaume Nodet</a>
+ *
+ * N.B. This has been customized to fit AeroFS's needs. The following
+ * modifications were made:
+ * - dropped support for copy-and-pasting from system clipboard.
+ * - dropped support for custom action handlers.
+ *
+ * The reason being that we ship a custom version of JVM on OS X and
+ * we stripped out AWT in our custom version because we don't use it. The
+ * above two features require AWT, so we remove these features.
  */
 public class ConsoleReader
 {
@@ -2462,13 +2441,6 @@ public class ConsoleReader
                     continue;
                 }
 
-                // Handle custom callbacks
-                if (o instanceof ActionListener) {
-                    ((ActionListener) o).actionPerformed(null);
-                    sb.setLength( 0 );
-                    continue;
-                }
-
                 // Search mode.
                 //
                 // Note that we have to do this first, because if there is a command
@@ -3575,103 +3547,6 @@ public class ConsoleReader
         }
     }
 
-    /**
-     * Paste the contents of the clipboard into the console buffer
-     *
-     * @return true if clipboard contents pasted
-     */
-    public boolean paste() throws IOException {
-        Clipboard clipboard;
-        try { // May throw ugly exception on system without X
-            clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        }
-        catch (Exception e) {
-            return false;
-        }
-
-        if (clipboard == null) {
-            return false;
-        }
-
-        Transferable transferable = clipboard.getContents(null);
-
-        if (transferable == null) {
-            return false;
-        }
-
-        try {
-            Object content = transferable.getTransferData(DataFlavor.plainTextFlavor);
-
-            // This fix was suggested in bug #1060649 at
-            // http://sourceforge.net/tracker/index.php?func=detail&aid=1060649&group_id=64033&atid=506056
-            // to get around the deprecated DataFlavor.plainTextFlavor, but it
-            // raises a UnsupportedFlavorException on Mac OS X
-
-            if (content == null) {
-                try {
-                    content = new DataFlavor().getReaderForText(transferable);
-                }
-                catch (Exception e) {
-                    // ignore
-                }
-            }
-
-            if (content == null) {
-                return false;
-            }
-
-            String value;
-
-            if (content instanceof Reader) {
-                // TODO: we might want instead connect to the input stream
-                // so we can interpret individual lines
-                value = "";
-                String line;
-
-                BufferedReader read = new BufferedReader((Reader) content);
-                while ((line = read.readLine()) != null) {
-                    if (value.length() > 0) {
-                        value += "\n";
-                    }
-
-                    value += line;
-                }
-            }
-            else {
-                value = content.toString();
-            }
-
-            if (value == null) {
-                return true;
-            }
-
-            putString(value);
-
-            return true;
-        }
-        catch (UnsupportedFlavorException e) {
-            Log.error("Paste failed: ", e);
-
-            return false;
-        }
-    }
-
-    //
-    // Triggered Actions
-    //
-
-    private final Map<Character, ActionListener> triggeredActions = new HashMap<Character, ActionListener>();
-
-    /**
-     * Adding a triggered Action allows to give another curse of action if a character passed the pre-processing.
-     * <p/>
-     * Say you want to close the application if the user enter q.
-     * addTriggerAction('q', new ActionListener(){ System.exit(0); }); would do the trick.
-     */
-    public void addTriggeredAction(final char c, final ActionListener listener) {
-        triggeredActions.put(c, listener);
-    }
-
     //
     // Formatted Output
     //
@@ -3970,5 +3845,4 @@ public class ConsoleReader
         print(sequence);
         flush(); // helps with step debugging
     }
-
 }
