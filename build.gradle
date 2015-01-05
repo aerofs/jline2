@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'maven'
 
 group = 'com.aerofs'
-version = '2.13-SNAPSHOT'
+version = '2.13'
 
 description = """JLine"""
 
@@ -43,7 +43,7 @@ artifacts {
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: "${nexusRepo}/nexus/content/repositories/snapshots") {
+            repository(url: "${nexusRepo}/nexus/content/repositories/releases") {
                 authentication(userName: nexusUser, password: nexusPass)
             }
 
