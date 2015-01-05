@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+group = 'com.aerofs'
+version = '2.13-SNAPSHOT'
+
+description = """JLine"""
+
+sourceCompatibility = 1.5
+targetCompatibility = 1.5
+
+repositories {
+     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+     maven { url "http://repo.maven.apache.org/maven2" }
+}
+
+dependencies {
+    compile group: 'org.fusesource.jansi', name: 'jansi', version:'1.11'
+    testCompile group: 'junit', name: 'junit', version:'4.10'
+}
+
+javadoc {
+    options.links 'http://jline.github.io/jline2/apidocs/reference/packages.html'
+}
+
+// packaging sources
+task packageSources(type: Jar) {
+    from sourceSets.main.allJava
+    classifier = 'sources'
+}
+
+// packaging tests
+task packageTests(type: Jar) {
+    from sourceSets.test.output
+    classifier = 'tests'
+}
+
+artifacts {
+    archives packageTests
+    archives packageSources
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "${nexusRepo}/nexus/content/repositories/snapshots") {
+                authentication(userName: nexusUser, password: nexusPass)
+            }
+
+            pom.artifactId = 'jline'
+        }
+    }
+}
